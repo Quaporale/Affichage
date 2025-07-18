@@ -11,16 +11,22 @@
       flex-direction: column;
       align-items: center;
     }
+
     .crop {
       overflow: hidden;
-      width: 90vw;
-      /* hauteur auto selon image */
-      margin: 0; /* pas d'écart entre les images */
+      margin: 0;
+      padding: 0;
+      /* Pas de largeur dynamique ici : la taille vient de l'image */
     }
+
     .crop img {
       display: block;
-      width: calc(100% + 120px);   /* on agrandit pour compenser le rognage */
-      margin: -60px 0;            /* décale l'image pour rogner 20px en haut et en bas */
+      margin: 0;
+      transform: translate(-20px, -20px);
+      /* Ajoute 40px de plus à l’image en largeur et hauteur */
+      width: calc(100% + 40px);
+      height: auto;
+      clip-path: inset(0); /* optionnel */
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
   </style>
@@ -44,9 +50,10 @@
       while (true) {
         try {
           const img = await loadImage(page);
-          // Crée un conteneur crop autour de l'image pour le rognage
           const wrapper = document.createElement('div');
           wrapper.classList.add('crop');
+          wrapper.style.width = `${img.naturalWidth - 40}px`; // rognage horizontal fixe
+          wrapper.style.height = `${img.naturalHeight - 40}px`; // rognage vertical fixe
           wrapper.appendChild(img);
           container.appendChild(wrapper);
           page++;
