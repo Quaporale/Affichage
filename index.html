@@ -11,9 +11,16 @@
       flex-direction: column;
       align-items: center;
     }
-    img {
-      max-width: 90vw;
-      margin-bottom: 1rem;
+    .crop {
+      overflow: hidden;
+      width: 90vw;
+      /* hauteur auto selon image */
+      margin: 0; /* pas d'écart entre les images */
+    }
+    .crop img {
+      display: block;
+      width: calc(100% + 40px);   /* on agrandit pour compenser le rognage */
+      margin: -20px 0;            /* décale l'image pour rogner 20px en haut et en bas */
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
   </style>
@@ -37,10 +44,13 @@
       while (true) {
         try {
           const img = await loadImage(page);
-          container.appendChild(img);
+          // Crée un conteneur crop autour de l'image pour le rognage
+          const wrapper = document.createElement('div');
+          wrapper.classList.add('crop');
+          wrapper.appendChild(img);
+          container.appendChild(wrapper);
           page++;
         } catch (e) {
-          // Quand une image n'existe pas, on arrête la boucle
           break;
         }
       }
