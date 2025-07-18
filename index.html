@@ -9,11 +9,13 @@
       padding: 0;
       background: #f5f5f5;
       overflow-x: hidden;
+      display: flex;
+      justify-content: center; /* Centre horizontalement */
     }
 
     #zoom-wrapper {
       transform-origin: top left;
-      /* Le zoom se fera ici */
+      /* transform sera défini dynamiquement */
     }
 
     .crop {
@@ -25,8 +27,8 @@
     .crop img {
       display: block;
       margin: 0;
-      transform: translate(-60px, -60px);
-      width: calc(100% + 120px);
+      transform: translate(-70px, -70px);
+      width: calc(100% + 140px);
       height: auto;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
@@ -36,9 +38,19 @@
   <div id="zoom-wrapper"></div>
 
   <script>
-    const zoomFactor = 0.7; // 🔍 Change cette valeur pour zoomer/dézoomer
+    const zoomFactor = 0.7; // 🔍 Ajuste ici
     const wrapper = document.getElementById('zoom-wrapper');
+
+    // Applique le zoom
     wrapper.style.transform = `scale(${zoomFactor})`;
+
+    // Centre manuellement le wrapper (compense le scale)
+    function centerWrapper() {
+      const screenWidth = window.innerWidth;
+      const wrapperWidth = wrapper.offsetWidth * zoomFactor;
+      const marginLeft = (screenWidth - wrapperWidth) / 2;
+      wrapper.style.marginLeft = `${marginLeft > 0 ? marginLeft : 0}px`;
+    }
 
     let page = 1;
 
@@ -67,8 +79,11 @@
           break;
         }
       }
+
+      centerWrapper(); // Centrage après le chargement
     }
 
+    window.addEventListener('resize', centerWrapper); // Recentrage si la fenêtre change
     loadAllPages();
   </script>
 </body>
