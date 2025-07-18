@@ -19,12 +19,12 @@ jobs:
       - name: Convert PDF to PNG
         run: |
           mkdir -p images
-          pdftoppm -png -singlefile Export.pdf images/Export
+          pdftoppm -png Export.pdf images/Export
 
       - name: Commit PNG to repo
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
-          git add images/Export.png
+          git add images/*.png
           git commit -m "Auto-convert PDF to PNG"
           git push
