@@ -4,36 +4,42 @@
   <meta charset="UTF-8" />
   <title>KPI Quotidien</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       background: #f5f5f5;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      overflow-x: hidden;
+    }
+
+    #zoom-wrapper {
+      transform-origin: top left;
+      /* Le zoom se fera ici */
     }
 
     .crop {
       overflow: hidden;
       margin: 0;
       padding: 0;
-      /* Pas de largeur dynamique ici : la taille vient de l'image */
     }
 
     .crop img {
       display: block;
       margin: 0;
-      transform: translate(-70px, -70px);
-      /* Ajoute 40px de plus à l’image en largeur et hauteur */
-      width: calc(100% + 140px);
+      transform: translate(-60px, -60px);
+      width: calc(100% + 120px);
       height: auto;
-      clip-path: inset(0); /* optionnel */
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
+  <div id="zoom-wrapper"></div>
+
   <script>
-    const container = document.body;
+    const zoomFactor = 1; // 🔍 Change cette valeur pour zoomer/dézoomer
+    const wrapper = document.getElementById('zoom-wrapper');
+    wrapper.style.transform = `scale(${zoomFactor})`;
+
     let page = 1;
 
     function loadImage(page) {
@@ -50,12 +56,12 @@
       while (true) {
         try {
           const img = await loadImage(page);
-          const wrapper = document.createElement('div');
-          wrapper.classList.add('crop');
-          wrapper.style.width = `${img.naturalWidth - 40}px`; // rognage horizontal fixe
-          wrapper.style.height = `${img.naturalHeight - 40}px`; // rognage vertical fixe
-          wrapper.appendChild(img);
-          container.appendChild(wrapper);
+          const crop = document.createElement('div');
+          crop.classList.add('crop');
+          crop.style.width = `${img.naturalWidth - 140}px`;
+          crop.style.height = `${img.naturalHeight - 140}px`;
+          crop.appendChild(img);
+          wrapper.appendChild(crop);
           page++;
         } catch (e) {
           break;
