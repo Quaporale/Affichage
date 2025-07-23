@@ -27,7 +27,7 @@ jobs:
       - name: Crop PNGs (50px each side)
         run: |
           for img in dev/images/*.png; do
-            mogrify -crop +40+40 -gravity Center "$img"
+            mogrify -crop +50+50 -gravity Center "$img"
           done
 
       - name: Commit PNGs to repo
