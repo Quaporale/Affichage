@@ -32,7 +32,7 @@ jobs:
 
       - name: Combine all PNGs into one image
         run: |
-          convert dev/images/*.png -append dev/images/Export-1.png
+          convert dev/images/*.png -append dev/images/Export-Full.png
 
       - name: Commit PNGs to repo
         run: |
