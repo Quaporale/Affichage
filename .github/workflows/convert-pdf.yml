@@ -1,4 +1,4 @@
-name: Convert PDF to PNG
+name: Convert PDF to PNG and Crop
 
 on:
   push:
@@ -13,18 +13,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Poppler (pdftoppm)
-        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install Poppler & ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils imagemagick
 
       - name: Convert PDF to PNG
         run: |
-          mkdir -p images
-          pdftoppm -png Export.pdf images/Export
+          mkdir -p dev/images
+          pdftoppm -png Export.pdf dev/images/Export
 
-      - name: Commit PNG to repo
+      - name: Crop PNGs (20px each side)
+        run: |
+          for img in dev/images/*.png; do
+            mogrify -crop +40+40 -gravity Center "$img"
+          done
+
+      - name: Commit PNGs to repo
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
-          git add images/*.png
-          git commit -m "Auto-convert PDF to PNG"
+          git add dev/images/*.png
+          git commit -m "Auto-convert and crop PDF pages"
           git push
