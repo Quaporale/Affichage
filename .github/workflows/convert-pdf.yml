@@ -30,15 +30,15 @@ jobs:
       #      convert "$img" -trim +repage "$img"
       #    done
 
-      - name: Trim only top and bottom borders
+      - name: Trim top and bottom only from PNGs
         run: |
           for img in dev/images/*.png; do
-            width=$(identify -format "%w" "$img")
-            # Étendre artificiellement la largeur pour empêcher le rognage horizontal
-            padded="$img-padded.png"
-            convert "$img" -background white -gravity center -extent $((width + 2000))x "$padded"
-            convert "$padded" -trim +repage "$img"
-            rm "$padded"
+            # Ajouter une bordure latérale pour empêcher le rognage horizontal
+            convert "$img" -bordercolor black -border 1x0 m_temp.png
+
+            convert m_temp.png -fuzz 10% -trim +repage "$img"
+            
+            rm m_temp.png
           done
 
       - name: Combine all PNGs into one image
