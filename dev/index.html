@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>KPI Quotidien</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center; /* Centre horizontalement */
+    }
+
+    #zoom-wrapper {
+      transform-origin: top left;
+      /* transform sera défini dynamiquement */
+    }
+
+    .crop {
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .crop img {
+      display: block;
+      margin: 0;
+      transform: translate(-55px, -55px);
+      width: calc(100% + 110px);
+      height: auto;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="zoom-wrapper"></div>
+
+  <script>
+    const zoomFactor = 0.7; // 🔍 Ajuste ici
+    const wrapper = document.getElementById('zoom-wrapper');
+
+    // Applique le zoom
+    wrapper.style.transform = `scale(${zoomFactor})`;
+
+    // Centre manuellement le wrapper (compense le scale)
+    function centerWrapper() {
+      const screenWidth = window.innerWidth;
+      const wrapperWidth = wrapper.offsetWidth * zoomFactor;
+      const marginLeft = (screenWidth - wrapperWidth) / 2;
+      wrapper.style.marginLeft = `${marginLeft > 0 ? marginLeft : 0}px`;
+    }
+
+    let page = 1;
+
+    function loadImage(page) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = `./images/Export-${page}.png`;
+        img.alt = `Page ${page}`;
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(`Image Export-${page}.png non trouvée`);
+      });
+    }
+
+    async function loadAllPages() {
+      while (true) {
+        try {
+          const img = await loadImage(page);
+          const crop = document.createElement('div');
+          crop.classList.add('crop');
+    
+          // Dimensions de base pour toutes les images
+          const cropLeftRight = 55;
+          const cropTopBottom = 55;
+    
+          // Si c'est la première page, on rogne plus le haut
+          const extraTopCrop = (page === 1) ? 120 : 0;
+    
+          const totalCropX = cropLeftRight * 2;
+          const totalCropY = cropTopBottom * 2 + extraTopCrop;
+    
+          crop.style.width = `${img.naturalWidth - totalCropX}px`;
+          crop.style.height = `${img.naturalHeight - totalCropY}px`;
+    
+          // Appliquer le style de translation sur l'image
+          img.style.transform = `translate(-${cropLeftRight}px, -${cropTopBottom + extraTopCrop}px)`;
+          img.style.width = `calc(100% + ${totalCropX}px)`;
+    
+          crop.appendChild(img);
+          wrapper.appendChild(crop);
+          page++;
+        } catch (e) {
+          break;
+        }
+      }
+
+      centerWrapper(); // Centrage après le chargement
+    }
+
+    window.addEventListener('resize', centerWrapper); // Recentrage si la fenêtre change
+    loadAllPages();
+  </script>
+</body>
+</html>
