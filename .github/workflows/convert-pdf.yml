@@ -30,15 +30,42 @@ jobs:
       #      convert "$img" -trim +repage "$img"
       #    done
 
-      - name: Trim top and bottom only from PNGs
+      - name: Trim all borders and align image widths
         run: |
+          mkdir -p dev/logs
+          > dev/logs/image_sizes_before.txt
+      
+          echo "Logging original sizes..."
           for img in dev/images/*.png; do
-            # Ajouter une bordure latérale pour empêcher le rognage horizontal
-            convert "$img" -bordercolor black -border 1x0 m_temp.png
-
-            convert m_temp.png -fuzz 10% -trim +repage "$img"
-            
-            rm m_temp.png
+            identify -format "%f %w %h\n" "$img" >> dev/logs/image_sizes_before.txt
+          done
+      
+          echo "Trimming all borders..."
+          for img in dev/images/*.png; do
+            convert "$img" -fuzz 10% -trim +repage "$img"
+          done
+      
+          echo "Finding max width..."
+          max_width=0
+          for img in dev/images/*.png; do
+            width=$(identify -format "%w" "$img")
+            if [ "$width" -gt "$max_width" ]; then
+              max_width=$width
+            fi
+          done
+          echo "Max width: $max_width"
+      
+          echo "Padding narrower images..."
+          for img in dev/images/*.png; do
+            width=$(identify -format "%w" "$img")
+            delta=$((max_width - width))
+      
+            if [ "$delta" -gt 0 ]; then
+              left=$((delta / 2))
+              right=$((delta - left))
+              convert "$img" -bordercolor white -border ${left}x0 -border ${right}x0 "$img"
+              echo "Padded $img with $left px left and $right px right"
+            fi
           done
 
       - name: Combine all PNGs into one image
