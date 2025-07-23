@@ -21,6 +21,8 @@ jobs:
 
       - name: Convert PDF to PNG
         run: |
+          rm -f dev/images/*.png
+          
           mkdir -p dev/images
           pdftoppm -png Export.pdf dev/images/Export
 
