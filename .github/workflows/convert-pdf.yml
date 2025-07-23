@@ -42,7 +42,7 @@ jobs:
       
           echo "Trimming all borders..."
           for img in dev/images/*.png; do
-            convert "$img" -fuzz 10% -trim +repage "$img"
+            convert "$img" -trim +repage "$img"
           done
       
           echo "Finding max width..."
