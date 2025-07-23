@@ -24,10 +24,21 @@ jobs:
           mkdir -p dev/images
           pdftoppm -png Export.pdf dev/images/Export
 
-      - name: Trim white borders from PNGs
+      #- name: Trim white borders from PNGs
+      #  run: |
+      #    for img in dev/images/*.png; do
+      #      convert "$img" -trim +repage "$img"
+      #    done
+
+      - name: Trim only top and bottom borders
         run: |
           for img in dev/images/*.png; do
-            convert "$img" -trim +repage "$img"
+            width=$(identify -format "%w" "$img")
+            # Étendre artificiellement la largeur pour empêcher le rognage horizontal
+            padded="$img-padded.png"
+            convert "$img" -background white -gravity center -extent $((width + 2000))x "$padded"
+            convert "$padded" -trim +repage "$img"
+            rm "$padded"
           done
 
       - name: Combine all PNGs into one image
