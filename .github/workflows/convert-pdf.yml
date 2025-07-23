@@ -24,17 +24,15 @@ jobs:
           mkdir -p dev/images
           pdftoppm -png Export.pdf dev/images/Export
 
-      #- name: Crop PNGs (50px each side)
-      #  run: |
-      #    for img in dev/images/*.png; do
-      #      mogrify -crop +50+50 -gravity Center "$img"
-      #    done
-
       - name: Trim white borders from PNGs
         run: |
           for img in dev/images/*.png; do
             convert "$img" -trim +repage "$img"
           done
+
+      - name: Combine all PNGs into one image
+        run: |
+          convert dev/images/*.png -append dev/images/Export-1.png
 
       - name: Commit PNGs to repo
         run: |
