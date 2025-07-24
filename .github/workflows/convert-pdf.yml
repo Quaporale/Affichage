@@ -72,7 +72,7 @@ jobs:
       
             width=$(identify -format "%w" "$img")
       
-            if [ "$i" -eq 0 ]; then
+            if [ "$i" -eq $((total - 1)) ]; then
               echo "👉 First image: only trim bottom"
       
               # Ajouter ligne noire en haut (≠ ne pas faire ça ici)
@@ -88,7 +88,7 @@ jobs:
               # Supprimer ligne noire en bas
               mogrify -gravity South -chop 0x1 "$img"
       
-            elif [ "$i" -eq $((total - 1)) ]; then
+            elif [ "$i" -eq 0 ]; then
               echo "👉 Last image: only trim top"
       
               # Ajouter ligne noire en haut
