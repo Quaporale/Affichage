@@ -30,6 +30,19 @@ jobs:
           echo "DIR=$dir"
           echo "dir=$dir" >> "$GITHUB_OUTPUT"
 
+      - name: Ensure index.html exists in parent folder
+        run: |
+          workdir="${{ steps.find_dir.outputs.dir }}"
+          parentdir=$(dirname "$workdir")
+          
+          echo "🔍 Vérification de $parentdir/index.html ..."
+          if [ ! -f "$parentdir/index.html" ]; then
+            echo "📄 index.html manquant. Copie de index-exemple.html..."
+            cp index-exemple.html "$parentdir/index.html"
+          else
+            echo "✅ index.html déjà présent."
+          fi
+
       - name: Install Poppler & ImageMagick
         run: |
           sudo apt-get update
