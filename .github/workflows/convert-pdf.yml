@@ -26,68 +26,37 @@ jobs:
           mkdir -p dev/images
           pdftoppm -png Export.pdf dev/images/Export
 
-      #- name: Trim white borders from PNGs
-      #  run: |
-      #    for img in dev/images/*.png; do
-      #      convert "$img" -trim +repage "$img"
-      #    done
+#      - name: Trim white borders from PNGs
+#        run: |
+#          for img in dev/images/*.png; do
+#            convert "$img" -trim +repage "$img"
+#          done
 
-      - name: Trim all borders and align image widths
+
+      - name: Trim white borders from PNGs
         run: |
-          set -e
-          shopt -s nullglob
-      
-          mkdir -p dev/logs
-          > dev/logs/image_sizes_before.txt
-          > dev/logs/image_sizes_after_trim.txt
-          > dev/logs/image_sizes_after_padding.txt
-      
-          echo "🔍 Logging original sizes..."
           for img in dev/images/*.png; do
-            identify -format "%f %w %h\n" "$img" >> dev/logs/image_sizes_before.txt
+            echo "Processing $img"
+          
+            # Etape 1 : Ajouter bordure noire en bas
+            convert "$img" -bordercolor black -border 0x1 "$img"
+          
+            # Trim → supprime uniquement le haut
+            convert "$img" -trim +repage "$img"
+          
+            # Supprimer le bord noir en bas (1px)
+            mogrify -chop 0x1 "$img"
+          
+            # Etape 2 : Ajouter bordure noire en haut
+            convert "$img" -gravity North -splice 0x1 "$img"
+            convert "$img" -fill black -draw "color 0,0 floodfill" "$img"
+          
+            # Trim → supprime uniquement le bas
+            convert "$img" -trim +repage "$img"
+          
+            # Supprimer le bord noir en haut (1px)
+            mogrify -gravity North -chop 0x1 "$img"
           done
-          cat dev/logs/image_sizes_before.txt
-      
-          echo "✂️ Trimming all borders..."
-          for img in dev/images/*.png; do
-            convert "$img" -fuzz 10% -trim +repage "$img"
-            identify -format "%f %w %h\n" "$img" >> dev/logs/image_sizes_after_trim.txt
-          done
-          echo "📏 Sizes after trimming:"
-          cat dev/logs/image_sizes_after_trim.txt
-      
-          echo "🔎 Finding max width..."
-          max_width=0
-          largest_image=""
-          for img in dev/images/*.png; do
-            width=$(identify -format "%w" "$img")
-            if [ "$width" -gt "$max_width" ]; then
-              max_width=$width
-              largest_image="$img"
-            fi
-          done
-          echo "🏆 Max width is $max_width from image: $largest_image"
-      
-          echo "➕ Padding narrower images to match width..."
-          for img in dev/images/*.png; do
-            width=$(identify -format "%w" "$img")
-            delta=$((max_width - width))
-      
-            if [ "$delta" -gt 0 ]; then
-              left=$((delta / 2))
-              right=$((delta - left))
-              echo "📐 $img | current width: $width | padding: left $left px, right $right px"
-              convert "$img" -bordercolor white -border ${left}x0 -border ${right}x0 "$img"
-            else
-              echo "✅ $img already has max width ($width px)"
-            fi
-      
-            # Log final size
-            identify -format "%f %w %h\n" "$img" >> dev/logs/image_sizes_after_padding.txt
-          done
-      
-          echo "📦 Final sizes after padding:"
-          cat dev/logs/image_sizes_after_padding.txt
 
       - name: Combine all PNGs into one image
         run: |
