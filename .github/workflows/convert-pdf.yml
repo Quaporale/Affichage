@@ -24,7 +24,19 @@ jobs:
           echo '${{ toJson(github.event.client_payload.exports) }}' > exports.json
           cat exports.json
 
+      - name: Détecter si des exports sont présents
+        id: check-exports
+        run: |
+          count=$(jq length exports.json)
+          echo "Nombre d'exports : $count"
+          if [ "$count" -gt 0 ]; then
+            echo "HAS_EXPORTS=true" >> $GITHUB_ENV
+          else
+            echo "HAS_EXPORTS=false" >> $GITHUB_ENV
+          fi
+
       - name: Convert PDF to PNG
+        if: env.HAS_EXPORTS == 'true'
         run: |
           for DIR in $(jq -r '.[]' exports.json); do
             echo "📄 PDF source : $DIR/Export.pdf"
@@ -34,6 +46,7 @@ jobs:
           done
 
       - name: Trim borders from PNGs
+        if: env.HAS_EXPORTS == 'true'
         run: |
           for DIR in $(jq -r '.[]' exports.json); do
             for img in "$DIR"/*.png; do
@@ -54,6 +67,7 @@ jobs:
           done
 
       - name: Combine PNGs into one image
+        if: env.HAS_EXPORTS == 'true'
         run: |
           for DIR in $(jq -r '.[]' exports.json); do
             echo "🖼️ Fusion des PNGs de $DIR"
@@ -61,6 +75,7 @@ jobs:
           done
 
       - name: Trim final full image
+        if: env.HAS_EXPORTS == 'true'
         run: |
           for DIR in $(jq -r '.[]' exports.json); do
             echo "✂️ Dernier trim pour $DIR/Export-Full.png"
@@ -68,6 +83,7 @@ jobs:
           done
 
       - name: Commit PNGs to repo
+        if: env.HAS_EXPORTS == 'true'
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
@@ -96,6 +112,7 @@ jobs:
           done
 
       - name: Ensure index.html exists and commit if needed
+        if: env.HAS_EXPORTS == 'true'
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
