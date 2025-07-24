@@ -36,26 +36,33 @@ jobs:
       - name: Trim white borders from PNGs (Above and Below only)
         run: |
           for img in dev/images/*.png; do
-            echo "Processing $img"
+            echo "🔧 Processing $img"
           
-            # Etape 1 : Ajouter bordure noire en bas
-            convert "$img" -bordercolor black -border 0x1 "$img"
+            # Étape 1 : Ajouter une ligne en bas
+            convert "$img" -gravity South -splice 0x1 "$img"
+            width=$(identify -format "%w" "$img")
+            height=$(identify -format "%h" "$img")
+            y=$((height - 1))
+            convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
           
-            # Trim → supprime uniquement le haut
+            # Trim supprime le haut seulement
             convert "$img" -trim +repage "$img"
           
-            # Supprimer le bord noir en bas (1px)
-            mogrify -chop 0x1 "$img"
+            # Supprimer ligne noire du bas
+            mogrify -gravity South -chop 0x1 "$img"
           
-            # Etape 2 : Ajouter bordure noire en haut
+            # Étape 2 : Ajouter une ligne en haut
             convert "$img" -gravity North -splice 0x1 "$img"
-            convert "$img" -fill black -draw "color 0,0 floodfill" "$img"
+            width=$(identify -format "%w" "$img")
+            convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
           
-            # Trim → supprime uniquement le bas
+            # Trim supprime le bas seulement
             convert "$img" -trim +repage "$img"
           
-            # Supprimer le bord noir en haut (1px)
+            # Supprimer ligne noire du haut
             mogrify -gravity North -chop 0x1 "$img"
+          
+            echo "✅ Done: $img"
           done
 
       - name: Combine all PNGs into one image
