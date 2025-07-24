@@ -33,7 +33,7 @@ jobs:
 #          done
 
 
-      - name: Trim white borders from PNGs
+      - name: Trim white borders from PNGs (Above and Below only)
         run: |
           for img in dev/images/*.png; do
             echo "Processing $img"
