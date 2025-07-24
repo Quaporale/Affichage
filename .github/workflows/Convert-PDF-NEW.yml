@@ -1,9 +1,9 @@
 name: Convert PDF to PNG and Crop
 
 on:
-  push:
-    paths:
-      - '**/Export.pdf'
+#  push:
+#    paths:
+#      - '**/Export.pdf'
   workflow_dispatch:
 
 jobs:
