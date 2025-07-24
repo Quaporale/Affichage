@@ -26,113 +26,45 @@ jobs:
           mkdir -p dev/images
           pdftoppm -png Export.pdf dev/images/Export
 
-#      - name: Trim white borders from PNGs (Above and Below only)
-#        run: |
-#          for img in dev/images/*.png; do
-#            echo "🔧 Processing $img"
-#          
-#            # Étape 1 : Ajouter une ligne en bas
-#            convert "$img" -gravity South -splice 0x1 "$img"
-#            width=$(identify -format "%w" "$img")
-#            height=$(identify -format "%h" "$img")
-#            y=$((height - 1))
-#            convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
-#          
-#            # Trim supprime le haut seulement
-#            convert "$img" -trim +repage "$img"
-#          
-#            # Supprimer ligne noire du bas
-#            mogrify -gravity South -chop 0x1 "$img"
-#          
-#            # Étape 2 : Ajouter une ligne en haut
-#            convert "$img" -gravity North -splice 0x1 "$img"
-#            width=$(identify -format "%w" "$img")
-#            convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
-#         
-#            # Trim supprime le bas seulement
-#            convert "$img" -trim +repage "$img"
-#          
-#            # Supprimer ligne noire du haut
-#            mogrify -gravity North -chop 0x1 "$img"
-#          
-#            echo "✅ Done: $img"
-#          done
-
-      - name: Trim white borders from PNGs (Above and Below only, with exceptions)
+      - name: Trim white borders from PNGs (Above and Below only)
         run: |
-          echo "📄 Listing images..."
-          mapfile -t images < <(ls dev/images/*.png | sort)
-      
-          total=${#images[@]}
-          echo "🖼️ Found $total images"
-      
-          for i in "${!images[@]}"; do
-            img="${images[$i]}"
-            echo "🔧 Processing $img (index $i)"
-      
+          for img in dev/images/*.png; do
+            echo "🔧 Processing $img"
+          
+            # Étape 1 : Ajouter une ligne en bas
+            convert "$img" -gravity South -splice 0x1 "$img"
             width=$(identify -format "%w" "$img")
-      
-            if [ "$i" -eq $((total - 1)) ]; then
-              echo "👉 First image: only trim bottom"
-      
-              # Ajouter ligne noire en haut (≠ ne pas faire ça ici)
-              # Ajouter ligne noire en bas
-              convert "$img" -gravity South -splice 0x1 "$img"
-              height=$(identify -format "%h" "$img")
-              y=$((height - 1))
-              convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
-      
-              # Trim → supprime haut
-              convert "$img" -trim +repage "$img"
-      
-              # Supprimer ligne noire en bas
-              mogrify -gravity South -chop 0x1 "$img"
-      
-            elif [ "$i" -eq 0 ]; then
-              echo "👉 Last image: only trim top"
-      
-              # Ajouter ligne noire en haut
-              convert "$img" -gravity North -splice 0x1 "$img"
-              convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
-      
-              # Trim → supprime bas
-              convert "$img" -trim +repage "$img"
-      
-              # Supprimer ligne noire en haut
-              mogrify -gravity North -chop 0x1 "$img"
-      
-            else
-              echo "👉 Middle image: trim top and bottom"
-      
-              # Ajouter ligne noire en bas
-              convert "$img" -gravity South -splice 0x1 "$img"
-              height=$(identify -format "%h" "$img")
-              y=$((height - 1))
-              convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
-      
-              # Trim → supprime haut
-              convert "$img" -trim +repage "$img"
-      
-              # Supprimer ligne noire en bas
-              mogrify -gravity South -chop 0x1 "$img"
-      
-              # Ajouter ligne noire en haut
-              convert "$img" -gravity North -splice 0x1 "$img"
-              convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
-      
-              # Trim → supprime bas
-              convert "$img" -trim +repage "$img"
-      
-              # Supprimer ligne noire en haut
-              mogrify -gravity North -chop 0x1 "$img"
-            fi
-      
+            height=$(identify -format "%h" "$img")
+            y=$((height - 1))
+            convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
+          
+            # Trim supprime le haut seulement
+            convert "$img" -trim +repage "$img"
+          
+            # Supprimer ligne noire du bas
+            mogrify -gravity South -chop 0x1 "$img"
+          
+            # Étape 2 : Ajouter une ligne en haut
+            convert "$img" -gravity North -splice 0x1 "$img"
+            width=$(identify -format "%w" "$img")
+            convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
+         
+            # Trim supprime le bas seulement
+            convert "$img" -trim +repage "$img"
+          
+            # Supprimer ligne noire du haut
+            mogrify -gravity North -chop 0x1 "$img"
+          
             echo "✅ Done: $img"
           done
 
       - name: Combine all PNGs into one image
         run: |
           convert dev/images/*.png -append dev/images/Export-Full.png
+
+      - name: Trim white borders from final image
+        run: |
+          convert dev/images/Export-Full.png -trim +repage dev/images/Export-Full.png
 
       - name: Commit PNGs to repo
         run: |
