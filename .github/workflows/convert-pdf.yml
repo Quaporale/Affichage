@@ -115,3 +115,47 @@ jobs:
               echo "✅ index.html déjà présent."
             fi
           done
+
+      - name: Générer index.html racine dynamique
+        run: |
+          echo "📝 Génération de index.html à la racine..."
+      
+          # Lister dossiers sauf .github
+          folders=$(find . -maxdepth 1 -mindepth 1 -type d ! -name ".github" -exec basename {} \; | sort)
+      
+          # Commencer la page HTML
+          cat <<EOF > index.html
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+      <meta charset="UTF-8" />
+      <title>Hub des Relevés</title>
+      </head>
+      <body>
+      <h1>Liste des Relevés</h1>
+      <ul>
+      EOF
+      
+          # Ajouter un <li> pour chaque dossier
+          for folder in $folders; do
+            echo "  <li><a href=\"$folder/index.html\">$folder</a></li>" >> index.html
+          done
+      
+          # Fin du fichier HTML
+          cat <<EOF >> index.html
+      </ul>
+      </body>
+      </html>
+      EOF
+      
+          # Ajouter et commit si modifié
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git commit -m "Mise à jour automatique de index.html racine"
+            git push
+            echo "✅ index.html racine mis à jour et pushé."
+          else
+            echo "ℹ️ Pas de changement dans index.html racine."
+          fi
