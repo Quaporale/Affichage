@@ -28,7 +28,7 @@ jobs:
           first_file=$(echo "$files" | head -n1)
           dir=$(dirname "$first_file")
           echo "DIR=$dir"
-          echo "::set-output name=dir::$dir"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
 
       - name: Install Poppler & ImageMagick
         run: |
