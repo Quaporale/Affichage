@@ -6,46 +6,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  convert:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set dynamic matrix from client payload
+        id: set-matrix
+        run: |
+          echo "📦 Payload reçu :"
+          echo '${{ toJson(github.event.client_payload.exports) }}'
+          
+          exports_json=$(echo '${{ toJson(github.event.client_payload.exports) }}' | jq -c '.')
+          echo "✅ Matrix: $exports_json"
+          echo "matrix=$exports_json" >> "$GITHUB_OUTPUT"
+
+  convert:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        export_dir: ${{fromJson(needs.build.outputs.matrix)}}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Debug payload
-        run: |
-          echo "Payload complet:"
-          echo '${{ toJson(github.event.client_payload) }}'
-      
-      - name: Extraire la liste des exports
-        id: extract_exports
-        run: |
-          echo "Liste des exports reçus :"
-          echo "${{ toJson(github.event.client_payload.exports) }}"
-          echo "::set-output name=exports::${{ toJson(github.event.client_payload.exports) }}"
-
-          exit 1
-
-      - name: Install Poppler & ImageMagick & jq
+      - name: Install Poppler & ImageMagick
         run: |
           sudo apt-get update
-          sudo apt-get install -y poppler-utils imagemagick
-          run: sudo apt-get update && sudo apt-get install -y jq
+          sudo apt-get install -y poppler-utils imagemagick jq
+
+      - name: Set working directory
+        id: set-dir
+        run: |
+          echo "DIR=${{ matrix.export_dir }}" >> "$GITHUB_ENV"
+          echo "Traitement du dossier : ${{ matrix.export_dir }}"
 
       - name: Convert PDF to PNG
         run: |
-          DIR="${{ steps.find_dir.outputs.dir }}"
-          echo "Working in dir: $DIR"
+          echo "📄 PDF source : $DIR/Export.pdf"
           rm -f "$DIR"/*.png
           mkdir -p "$DIR"
           pdftoppm -png "$DIR"/Export.pdf "$DIR"/Export
 
-      - name: Trim white borders from PNGs (Above and Below only)
+      - name: Trim borders from PNGs
         run: |
-          DIR="${{ steps.find_dir.outputs.dir }}"
           for img in "$DIR"/*.png; do
-            echo "🔧 Processing $img"
+            echo "🔧 Traitement $img"
             convert "$img" -gravity South -splice 0x1 "$img"
             width=$(identify -format "%w" "$img")
             height=$(identify -format "%h" "$img")
@@ -54,35 +62,30 @@ jobs:
             convert "$img" -trim +repage "$img"
             mogrify -gravity South -chop 0x1 "$img"
             convert "$img" -gravity North -splice 0x1 "$img"
-            width=$(identify -format "%w" "$img")
             convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
             convert "$img" -trim +repage "$img"
             mogrify -gravity North -chop 0x1 "$img"
-            echo "✅ Done: $img"
+            echo "✅ Terminé : $img"
           done
 
       - name: Combine all PNGs into one image
         run: |
-          DIR="${{ steps.find_dir.outputs.dir }}"
           convert "$DIR"/*.png -append "$DIR"/Export-Full.png
 
       - name: Trim white borders from final image
         run: |
-          DIR="${{ steps.find_dir.outputs.dir }}"
           convert "$DIR"/Export-Full.png -trim +repage "$DIR"/Export-Full.png
 
       - name: Commit PNGs to repo
         run: |
-          DIR="${{ steps.find_dir.outputs.dir }}"
           git config user.name github-actions
           git config user.email actions@github.com
           git add "$DIR"/*.png
-          git commit -m "Auto-convert and crop PDF pages" || echo "ℹ️ Aucun changement PNG à commit"
+          git commit -m "Auto-convert and crop PDF pages from $DIR" || echo "ℹ️ Aucun changement PNG à commit"
           git push
 
       - name: Ensure index.html exists and commit if needed
         run: |
-          DIR="${{ steps.find_dir.outputs.dir }}"
           PARENT_DIR=$(dirname "$DIR")
           GRANDPARENT_DIR=$(dirname "$PARENT_DIR")
 
@@ -90,12 +93,12 @@ jobs:
           if [ ! -f "$PARENT_DIR/index.html" ]; then
             echo "📄 index.html manquant. Copie depuis $GRANDPARENT_DIR/index-exemple.html ..."
             cp "$GRANDPARENT_DIR/index-exemple.html" "$PARENT_DIR/index.html"
-            
+
             git config user.name github-actions
             git config user.email actions@github.com
             git add "$PARENT_DIR/index.html"
-            git commit -m "Ajout automatique de index.html manquant" || echo "ℹ️ Aucun changement à commit"
+            git commit -m "Ajout automatique de index.html dans $PARENT_DIR" || echo "ℹ️ Aucun changement à commit"
             git push
           else
-            echo "✅ index.html déjà présent."
+            echo "✅ index.html déjà présent dans $PARENT_DIR."
           fi
