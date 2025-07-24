@@ -6,99 +6,96 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Set dynamic matrix from client payload
-        id: set-matrix
-        run: |
-          echo "📦 Payload reçu :"
-          echo '${{ toJson(github.event.client_payload.exports) }}'
-          
-          exports_json=$(echo '${{ toJson(github.event.client_payload.exports) }}' | jq -c '.')
-          echo "✅ Matrix: $exports_json"
-          echo "matrix=$exports_json" >> "$GITHUB_OUTPUT"
-
   convert:
-    needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        export_dir: ${{fromJson(needs.build.outputs.matrix)}}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Poppler & ImageMagick
+      - name: Install Poppler & ImageMagick & jq
         run: |
           sudo apt-get update
           sudo apt-get install -y poppler-utils imagemagick jq
 
-      - name: Set working directory
-        id: set-dir
+      - name: Charger les exports depuis payload
+        id: load-exports
         run: |
-          echo "DIR=${{ matrix.export_dir }}" >> "$GITHUB_ENV"
-          echo "Traitement du dossier : ${{ matrix.export_dir }}"
+          echo '${{ toJson(github.event.client_payload.exports) }}' > exports.json
+          cat exports.json
 
       - name: Convert PDF to PNG
         run: |
-          echo "📄 PDF source : $DIR/Export.pdf"
-          rm -f "$DIR"/*.png
-          mkdir -p "$DIR"
-          pdftoppm -png "$DIR"/Export.pdf "$DIR"/Export
+          for DIR in $(jq -r '.[]' exports.json); do
+            echo "📄 PDF source : $DIR/Export.pdf"
+            rm -f "$DIR"/*.png || true
+            mkdir -p "$DIR"
+            pdftoppm -png "$DIR/Export.pdf" "$DIR/Export"
+          done
 
       - name: Trim borders from PNGs
         run: |
-          for img in "$DIR"/*.png; do
-            echo "🔧 Traitement $img"
-            convert "$img" -gravity South -splice 0x1 "$img"
-            width=$(identify -format "%w" "$img")
-            height=$(identify -format "%h" "$img")
-            y=$((height - 1))
-            convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
-            convert "$img" -trim +repage "$img"
-            mogrify -gravity South -chop 0x1 "$img"
-            convert "$img" -gravity North -splice 0x1 "$img"
-            convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
-            convert "$img" -trim +repage "$img"
-            mogrify -gravity North -chop 0x1 "$img"
-            echo "✅ Terminé : $img"
+          for DIR in $(jq -r '.[]' exports.json); do
+            for img in "$DIR"/*.png; do
+              echo "🔧 Trim $img"
+              convert "$img" -gravity South -splice 0x1 "$img"
+              width=$(identify -format "%w" "$img")
+              height=$(identify -format "%h" "$img")
+              y=$((height - 1))
+              convert "$img" -fill black -draw "rectangle 0,$y $((width - 1)),$y" "$img"
+              convert "$img" -trim +repage "$img"
+              mogrify -gravity South -chop 0x1 "$img"
+              convert "$img" -gravity North -splice 0x1 "$img"
+              convert "$img" -fill black -draw "rectangle 0,0 $((width - 1)),0" "$img"
+              convert "$img" -trim +repage "$img"
+              mogrify -gravity North -chop 0x1 "$img"
+              echo "✅ Terminé : $img"
+            done
           done
 
-      - name: Combine all PNGs into one image
+      - name: Combine PNGs into one image
         run: |
-          convert "$DIR"/*.png -append "$DIR"/Export-Full.png
+          for DIR in $(jq -r '.[]' exports.json); do
+            echo "🖼️ Fusion des PNGs de $DIR"
+            convert "$DIR"/*.png -append "$DIR/Export-Full.png"
+          done
 
-      - name: Trim white borders from final image
+      - name: Trim final full image
         run: |
-          convert "$DIR"/Export-Full.png -trim +repage "$DIR"/Export-Full.png
+          for DIR in $(jq -r '.[]' exports.json); do
+            echo "✂️ Dernier trim pour $DIR/Export-Full.png"
+            convert "$DIR"/Export-Full.png -trim +repage "$DIR"/Export-Full.png
+          done
 
       - name: Commit PNGs to repo
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
-          git add "$DIR"/*.png
-          git commit -m "Auto-convert and crop PDF pages from $DIR" || echo "ℹ️ Aucun changement PNG à commit"
-          git push
+          for DIR in $(jq -r '.[]' exports.json); do
+            echo "📤 Commit des PNGs dans $DIR"
+            git add "$DIR"/*.png
+            git commit -m "Auto-convert and crop PDF pages from $DIR" || echo "ℹ️ Aucun changement à commit"
+            git pull --rebase || echo "ℹ️ Aucun changement distant"
+            git push || echo "⚠️ Push échoué (conflit possible)"
+          done
 
       - name: Ensure index.html exists and commit if needed
         run: |
-          PARENT_DIR=$(dirname "$DIR")
-          GRANDPARENT_DIR=$(dirname "$PARENT_DIR")
+          git config user.name github-actions
+          git config user.email actions@github.com
+          for DIR in $(jq -r '.[]' exports.json); do
+            PARENT_DIR=$(dirname "$DIR")
+            GRANDPARENT_DIR=$(dirname "$PARENT_DIR")
 
-          echo "🔍 Vérification de $PARENT_DIR/index.html ..."
-          if [ ! -f "$PARENT_DIR/index.html" ]; then
-            echo "📄 index.html manquant. Copie depuis $GRANDPARENT_DIR/index-exemple.html ..."
-            cp "$GRANDPARENT_DIR/index-exemple.html" "$PARENT_DIR/index.html"
-
-            git config user.name github-actions
-            git config user.email actions@github.com
-            git add "$PARENT_DIR/index.html"
-            git commit -m "Ajout automatique de index.html dans $PARENT_DIR" || echo "ℹ️ Aucun changement à commit"
-            git push
-          else
-            echo "✅ index.html déjà présent dans $PARENT_DIR."
-          fi
+            echo "🔍 Vérification de $PARENT_DIR/index.html"
+            if [ ! -f "$PARENT_DIR/index.html" ]; then
+              echo "📄 Ajout de index.html depuis $GRANDPARENT_DIR/index-exemple.html"
+              cp "$GRANDPARENT_DIR/index-exemple.html" "$PARENT_DIR/index.html"
+              git add "$PARENT_DIR/index.html"
+              git commit -m "Ajout automatique de index.html dans $PARENT_DIR" || echo "ℹ️ Aucun changement à commit"
+              git pull --rebase || echo "ℹ️ Aucun changement distant"
+              git push || echo "⚠️ Push échoué (conflit possible)"
+            else
+              echo "✅ index.html déjà présent."
+            fi
+          done
