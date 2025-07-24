@@ -26,13 +26,6 @@ jobs:
           mkdir -p dev/images
           pdftoppm -png Export.pdf dev/images/Export
 
-#      - name: Trim white borders from PNGs
-#        run: |
-#          for img in dev/images/*.png; do
-#            convert "$img" -trim +repage "$img"
-#          done
-
-
       - name: Trim white borders from PNGs (Above and Below only)
         run: |
           for img in dev/images/*.png; do
