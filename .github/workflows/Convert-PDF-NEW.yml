@@ -39,14 +39,14 @@ jobs:
         run: |
           DIR="${{ steps.find_dir.outputs.dir }}"
           echo "Working in dir: $DIR"
-          rm -f "$DIR"/dev/images/*.png
-          mkdir -p "$DIR"/dev/images
-          pdftoppm -png "$DIR"/Export.pdf "$DIR"/dev/images/Export
+          rm -f "$DIR"/*.png
+          mkdir -p "$DIR"
+          pdftoppm -png "$DIR"/Export.pdf "$DIR"/Export
 
       - name: Trim white borders from PNGs (Above and Below only)
         run: |
           DIR="${{ steps.find_dir.outputs.dir }}"
-          for img in "$DIR"/dev/images/*.png; do
+          for img in "$DIR"/*.png; do
             echo "🔧 Processing $img"
             convert "$img" -gravity South -splice 0x1 "$img"
             width=$(identify -format "%w" "$img")
@@ -66,18 +66,18 @@ jobs:
       - name: Combine all PNGs into one image
         run: |
           DIR="${{ steps.find_dir.outputs.dir }}"
-          convert "$DIR"/dev/images/*.png -append "$DIR"/dev/images/Export-Full.png
+          convert "$DIR"/*.png -append "$DIR"/Export-Full.png
 
       - name: Trim white borders from final image
         run: |
           DIR="${{ steps.find_dir.outputs.dir }}"
-          convert "$DIR"/dev/images/Export-Full.png -trim +repage "$DIR"/dev/images/Export-Full.png
+          convert "$DIR"/Export-Full.png -trim +repage "$DIR"/Export-Full.png
 
       - name: Commit PNGs to repo
         run: |
           DIR="${{ steps.find_dir.outputs.dir }}"
           git config user.name github-actions
           git config user.email actions@github.com
-          git add "$DIR"/dev/images/*.png
+          git add "$DIR"/*.png
           git commit -m "Auto-convert and crop PDF pages"
           git push
