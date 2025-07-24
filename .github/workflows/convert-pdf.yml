@@ -120,17 +120,34 @@ jobs:
         run: |
           echo "📝 Génération de index.html à la racine..."
       
-          folders=$(find . -maxdepth 1 -mindepth 1 -type d ! -name ".github" -exec basename {} \; | sort)
+          folders=$(find . -maxdepth 1 -mindepth 1 -type d ! -name ".github" ! -name ".git" -exec basename {} \; | sort)
       
           {
             echo '<!DOCTYPE html>'
             echo '<html lang="fr">'
-            echo '<head><meta charset="UTF-8" /><title>Hub des Relevés</title></head>'
-            echo '<body><h1>Liste des Relevés</h1><ul>'
+            echo '<head>'
+            echo '  <meta charset="UTF-8" />'
+            echo '  <title>Liste des Affichages</title>'
+            echo '  <style>'
+            echo '    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 2em; }'
+            echo '    table { border-collapse: collapse; width: 100%; max-width: 600px; background: white; }'
+            echo '    th, td { border: 1px solid #ccc; padding: 0.75em; text-align: left; }'
+            echo '    th { background-color: #eee; }'
+            echo '    tr:hover { background-color: #f1f1f1; }'
+            echo '  </style>'
+            echo '</head>'
+            echo '<body>'
+            echo '  <h1>📁 Liste des Affichages</h1>'
+            echo '  <table>'
+            echo '    <thead><tr><th>Dossier</th><th>Ouvrir</th></tr></thead>'
+            echo '    <tbody>'
             for folder in $folders; do
-              echo "  <li><a href=\"$folder/index.html\">$folder</a></li>"
+              echo "      <tr><td>$folder</td><td><a href=\"$folder/index.html\">Accéder</a></td></tr>"
             done
-            echo '</ul></body></html>'
+            echo '    </tbody>'
+            echo '  </table>'
+            echo '</body>'
+            echo '</html>'
           } > index.html
       
           git add index.html
