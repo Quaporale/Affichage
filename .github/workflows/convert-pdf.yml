@@ -13,26 +13,25 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Find directory of Export.pdf
-        id: find_dir
+      - name: Debug payload
         run: |
-          # Trouver tous les fichiers Export.pdf modifiés dans le push
-          files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep 'Export.pdf' || true)
-          if [ -z "$files" ]; then
-            # fallback: chercher dans tout le repo
-            files=$(find . -name Export.pdf)
-          fi
-          echo "Export.pdf found at: $files"
-          # Prendre le premier (en cas de plusieurs)
-          first_file=$(echo "$files" | head -n1)
-          dir=$(dirname "$first_file")
-          echo "DIR=$dir"
-          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "Payload complet:"
+          echo '${{ toJson(github.event.client_payload) }}'
+      
+      - name: Extraire la liste des exports
+        id: extract_exports
+        run: |
+          echo "Liste des exports reçus :"
+          echo "${{ toJson(github.event.client_payload.exports) }}"
+          echo "::set-output name=exports::${{ toJson(github.event.client_payload.exports) }}"
 
-      - name: Install Poppler & ImageMagick
+          exit 1
+
+      - name: Install Poppler & ImageMagick & jq
         run: |
           sudo apt-get update
           sudo apt-get install -y poppler-utils imagemagick
+          run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Convert PDF to PNG
         run: |
