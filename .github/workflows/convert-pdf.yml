@@ -71,12 +71,28 @@ jobs:
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
+
           for DIR in $(jq -r '.[]' exports.json); do
             echo "📤 Commit des PNGs dans $DIR"
             git add "$DIR"/*.png
-            git commit -m "Auto-convert and crop PDF pages from $DIR" || echo "ℹ️ Aucun changement à commit"
-            git pull --rebase || echo "ℹ️ Aucun changement distant"
-            git push || echo "⚠️ Push échoué (conflit possible)"
+
+            # Commit si changements
+            git diff --cached --quiet || git commit -m "Auto-convert and crop PDF pages from $DIR"
+
+            echo "🔄 Tentative de pull avec autostash"
+            git pull --rebase --autostash || {
+              echo "❌ Pull échoué, tentative de récupération avec hard reset..."
+              git fetch origin main
+              git reset --hard origin/main
+            }
+
+            echo "🚀 Push vers le dépôt distant"
+            git push || {
+              echo "❌ Push toujours rejeté. Dernière tentative avec pull + rebase forcé"
+              git pull --rebase --autostash && git push || echo "⚠️ Push définitivement échoué pour $DIR"
+            }
+
+            echo "✅ Commit et push terminés pour $DIR"
           done
 
       - name: Ensure index.html exists and commit if needed
