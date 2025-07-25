@@ -147,7 +147,7 @@ jobs:
             echo '  <title>Liste des Affichages</title>'
             echo '  <style>'
             echo '    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 2em; }'
-            echo '    table { border-collapse: collapse; width: 100%; max-width: 600px; background: white; }'
+            echo '    table { border-collapse: collapse; width: 100%; max-width: 800px; background: white; }'
             echo '    th, td { border: 1px solid #ccc; padding: 0.75em; text-align: left; }'
             echo '    th { background-color: #eee; }'
             echo '    tr:hover { background-color: #f1f1f1; }'
@@ -156,10 +156,16 @@ jobs:
             echo '<body>'
             echo '  <h1>📁 Liste des Affichages</h1>'
             echo '  <table>'
-            echo '    <thead><tr><th>Dossier</th><th>Ouvrir</th></tr></thead>'
+            echo '    <thead><tr><th>Dossier</th><th>Ouvrir</th><th>Dernière mise à jour</th></tr></thead>'
             echo '    <tbody>'
             for folder in $folders; do
-              echo "      <tr><td>$folder</td><td><a href=\"$folder/index.html\">Accéder</a></td></tr>"
+              file="$folder/images/Export-Full.png"
+              if [ -f "$file" ]; then
+                mod_date=$(stat -c "%y" "$file" | cut -d'.' -f1)
+              else
+                mod_date="Non disponible"
+              fi
+              echo "      <tr><td>$folder</td><td><a href=\"$folder/index.html\">Accéder</a></td><td>$mod_date</td></tr>"
             done
             echo '    </tbody>'
             echo '  </table>'
@@ -171,7 +177,7 @@ jobs:
           if ! git diff --cached --quiet; then
             git config user.name "github-actions"
             git config user.email "actions@github.com"
-            git commit -m "Mise à jour automatique de index.html racine"
+            git commit -m "Mise à jour automatique de index.html racine avec dates"
             git push
             echo "✅ index.html racine mis à jour et pushé."
           else
