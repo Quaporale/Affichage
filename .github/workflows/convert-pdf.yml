@@ -164,7 +164,8 @@ jobs:
             for folder in $folders; do
               file="$folder/images/Export-Full.png"
               if [ -f "$file" ]; then
-                mod_date=$(TZ="Europe/Paris" git log -1 --format="%cd" --date=format:"%Y-%m-%d %H:%M" "$file")
+                raw_date=$(git log -1 --format="%cd" --date=iso "$file")
+                mod_date=$(TZ="Europe/Paris" date -d "$raw_date" "+%Y-%m-%d %H:%M")
               else
                 mod_date="Non disponible"
               fi
