@@ -162,7 +162,7 @@ jobs:
             for folder in $folders; do
               file="$folder/images/Export-Full.png"
               if [ -f "$file" ]; then
-                mod_date=$(stat -c "%y" "$file" | cut -d'.' -f1)
+                mod_date=$(TZ="Europe/Paris" date -d @"$(stat -c %Y "$file")" "+%Y-%m-%d %H:%M")
               else
                 mod_date="Non disponible"
               fi
