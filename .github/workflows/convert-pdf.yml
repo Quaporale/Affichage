@@ -13,11 +13,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Poppler & ImageMagick & jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y poppler-utils imagemagick jq
-
       - name: Charger les exports depuis payload
         id: load-exports
         run: |
@@ -34,6 +29,12 @@ jobs:
           else
             echo "HAS_EXPORTS=false" >> $GITHUB_ENV
           fi
+
+      - name: Install Poppler & ImageMagick & jq
+        if: env.HAS_EXPORTS == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils imagemagick jq
 
       - name: Convert PDF to PNG
         if: env.HAS_EXPORTS == 'true'
